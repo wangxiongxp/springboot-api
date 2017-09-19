@@ -1,0 +1,189 @@
+
+column//property//javaType//jdbcType
+parameterType//resultType//resultMap
+
+Mybatis JdbcType与MySql数据类型对应列表
+主要是基本的数字、时间、字符串
+
+JdbcType    Mysql
+
+TINYINT     TINYINT
+SMALLINT    SMALLINT
+INTEGER     INT
+BIGINT      BIGINT
+DECIMAL     DECIMAL
+FLOAT       FLOAT
+DOUBLE      DOUBLE
+
+CHAR        CHAR
+VARCHAR     VARCHAR
+CLOB        TEXT
+
+TIME        TIME
+DATE        DATE
+TIMESTAMP   TIMESTAMP/DATETIME
+
+
+parameterType
+有基本数据类型和JAVA复杂数据类型
+
+基本数据类型：包含int,String,Date等。基本数据类型作为传参，只能传入一个。通过#{参数名} 即可获取传入的值
+复杂数据类型：包含JAVA实体类、Map。通过#{属性名}或#{map的KeyName}即可获取传入的值
+
+另外MyBatis还提供了一个使用注解来参入多个参数的方式。这种方式需要在接口的参数上添加@Param注解
+接口方法：
+public List<Teacher> selectTeacher(@Param(value="id") String id,@Param(value="sex") String sex);
+XML文件：
+    <select id="selectTeacher"  resultType="com.myapp.domain.Teacher">
+        select * from Teacher where c_id=#{id} and sex=#{sex}
+    </select>
+
+#号和$号区别：
+#相当于对数据 加上 双引号，$相当于直接显示数据
+#方式能够很大程度防止sql注入，$方式无法防止Sql注入
+一般能用#的就别用$
+排序时使用order by 动态参数时需要注意，用$而不是#
+
+
+resultMap:
+one to one - association ;
+//单对一，使用association
+one to many - collection ;
+//单对多，使用collection
+
+mapping with nested ResultMap - column is not necessary ，javaType is necessary ！
+//嵌套结果:使用嵌套结果映射来处理重复的联合结果的子集。
+//使用嵌套结果，column 不是必需的，但是JavaType是必需的；
+
+mapping with nested select - column is  necessary ，javaType is  not necessary ！
+//嵌套查询:通过执行另外一个 SQL 映射语句来返回预期的复杂类型。
+//使用嵌套查询，column是必需的，JavaType不是必须的，子查询自定义resultType即可！！
+
+
+关联的嵌套查询:
+属性 column select
+
+<resultMap id="blogResult" type="Blog">
+  <association property="author" column="author_id" javaType="Author" select="selectAuthor"/>
+</resultMap>
+
+<select id="selectBlog" parameterType="int" resultMap="blogResult">
+  SELECT * FROM BLOG WHERE ID = #{id}
+</select>
+
+<select id="selectAuthor" parameterType="int" resultType="Author">
+  SELECT * FROM AUTHOR WHERE ID = #{id}
+</select>
+
+我们有两个查询语句:一个来加载博客,另外一个来加载作者,而且博客的结果映射描 述了“selectAuthor”语句应该被用来加载它的 author 属性。
+其他所有的属性将会被自动加载,假设它们的列和属性名相匹配。
+这种方式很简单, 但是对于大型数据集合和列表将不会表现很好。 问题就是我们熟知的 “N+1 查询问题”。
+
+关联的嵌套结果:
+
+<select id="selectBlog" parameterType="int" resultMap="blogResult">
+  select
+    B.id            as blog_id,
+    B.title         as blog_title,
+    B.author_id     as blog_author_id,
+    A.id            as author_id,
+    A.username      as author_username,
+    A.password      as author_password,
+    A.email         as author_email,
+    A.bio           as author_bio
+  from Blog B left outer join Author A on B.author_id = A.id
+  where B.id = #{id}
+</select>
+
+<resultMap id="blogResult" type="Blog">
+  <id property="id" column="blog_id" />
+  <result property="title" column="blog_title"/>
+  <association property="author" column="blog_author_id" javaType="Author" resultMap="authorResult"/>
+</resultMap>
+
+<resultMap id="authorResult" type="Author">
+  <id property="id" column="author_id"/>
+  <result property="username" column="author_username"/>
+  <result property="password" column="author_password"/>
+  <result property="email" column="author_email"/>
+  <result property="bio" column="author_bio"/>
+</resultMap>
+或者：
+<resultMap id="blogResult" type="Blog">
+  <id property="id" column="blog_id" />
+  <result property="title" column="blog_title"/>
+  <association property="author" javaType="Author">
+    <id property="id" column="author_id"/>
+    <result property="username" column="author_username"/>
+    <result property="password" column="author_password"/>
+    <result property="email" column="author_email"/>
+    <result property="bio" column="author_bio"/>
+  </association>
+</resultMap>
+
+
+集合的嵌套查询：
+<resultMap id="blogResult" type="Blog">
+  <collection property="posts" javaType="ArrayList" column="id" ofType="Post" select="selectPostsForBlog"/>
+</resultMap>
+
+<select id="selectBlog" parameterType="int" resultMap="blogResult">
+  SELECT * FROM BLOG WHERE ID = #{id}
+</select>
+
+<select id="selectPostsForBlog" parameterType="int" resultType="Blog">
+  SELECT * FROM POST WHERE BLOG_ID = #{id}
+</select>
+
+集合的嵌套结果：
+
+<select id="selectBlog" parameterType="int" resultMap="blogResult">
+  select
+  B.id as blog_id,
+  B.title as blog_title,
+  B.author_id as blog_author_id,
+  P.id as post_id,
+  P.subject as post_subject,
+  P.body as post_body,
+  from Blog B
+  left outer join Post P on B.id = P.blog_id
+  where B.id = #{id}
+</select>
+
+<resultMap id="blogResult" type="Blog">
+  <id property="id" column="blog_id" />
+  <result property="title" column="blog_title"/>
+  <collection property="posts" ofType="Post">
+    <id property="id" column="post_id"/>
+    <result property="subject" column="post_subject"/>
+    <result property="body" column="post_body"/>
+  </collection>
+</resultMap>
+
+或者：
+<resultMap id="blogResult" type="Blog">
+  <id property="id" column="blog_id" />
+  <result property="title" column="blog_title"/>
+  <collection property="posts" ofType="Post" resultMap="blogPostResult" columnPrefix="post_"/>
+</resultMap>
+
+<resultMap id="blogPostResult" type="Post">
+  <id property="id" column="id"/>
+  <result property="subject" column="subject"/>
+  <result property="body" column="body"/>
+</resultMap>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

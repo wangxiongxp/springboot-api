@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wx.demo.dao.UserDao" >
+
+    <resultMap id="BaseResultMap" type="com.wx.demo.entity.User" >
+        <result column="user_id" property="userId" jdbcType="BIGINT" />
+        <result column="user_name" property="userName" jdbcType="VARCHAR" />
+        <result column="user_password" property="userPassword" jdbcType="VARCHAR" />
+        <result column="user_status" property="userStatus" jdbcType="INTEGER" />
+        <result column="user_locked" property="userLocked" jdbcType="INTEGER" />
+        <result column="age" property="age" jdbcType="INTEGER" />
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+        <result column="create_id" property="createBy" jdbcType="INTEGER" />
+        <result column="update_id" property="updateBy" jdbcType="INTEGER" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        user_id, user_name,user_password,user_status,user_locked, age,create_time, update_time
+    </sql>
+
+    <!--通过id查询-->
+    <select id="getById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from user
+        where user_id = #{userId,jdbcType=BIGINT}
+    </select>
+
+    <!--通过id查询-->
+    <select id="getByName" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from user
+        where user_name = #{userName,jdbcType=VARCHAR}
+    </select>
+
+    <!--查询所有用户-->
+    <select id="listAll" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from user
+    </select>
+
+    <!--查询分页用户列表-->
+    <select id="listByPage" parameterType="java.util.Map" resultMap="BaseResultMap">
+        select <include refid="Base_Column_List" /> from user
+        <where>
+            <if test="keyword != null and keyword != ''">
+                user_name like "%"#{keyword}"%"
+            </if>
+        </where>
+        <if test="orderBy != null and orderBy != ''">
+            order by ${orderBy}
+        </if>
+    </select>
+
+    <!--删除-->
+    <delete id="remove" parameterType="java.lang.Long" >
+        delete from user
+        where user_id = #{userId,jdbcType=BIGINT}
+    </delete>
+
+    <!--批量删除-->
+    <delete id="batchRemove" parameterType="java.util.List">
+        <![CDATA[
+       delete from user where user_id in
+    ]]>
+        <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+    <!--插入用户数据-->
+    <insert id="save" useGeneratedKeys="true" keyProperty="userId" parameterType="com.wx.demo.entity.User" >
+        insert into user
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="userId != null" >
+                user_id,
+            </if>
+            <if test="userName != null" >
+                user_name,
+            </if>
+            <if test="userPassword != null" >
+                user_password,
+            </if>
+            <if test="age != null" >
+                age,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+            <if test="updateTime != null" >
+                update_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="userId != null" >
+                #{userId,jdbcType=BIGINT},
+            </if>
+            <if test="userName != null" >
+                #{userName,jdbcType=VARCHAR},
+            </if>
+            <if test="userPassword != null" >
+                #{userPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="age != null" >
+                #{age,jdbcType=INTEGER},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null" >
+                #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+
+    <!--更新用户数据-->
+    <update id="update" parameterType="com.wx.demo.entity.User" >
+        update user
+        <trim suffixOverrides="," >
+            <set >
+                <if test="userName != null" >
+                    user_name = #{userName,jdbcType=VARCHAR},
+                </if>
+                <if test="age != null" >
+                    age = #{age,jdbcType=INTEGER},
+                </if>
+                <if test="updateTime != null" >
+                    update_time = #{updateTime,jdbcType=TIMESTAMP},
+                </if>
+            </set>
+        </trim>
+        where user_id = #{userId,jdbcType=BIGINT}
+    </update>
+
+</mapper>
